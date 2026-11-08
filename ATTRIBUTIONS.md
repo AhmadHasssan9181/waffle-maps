@@ -27,8 +27,3 @@ Any map or derived product must display:
 - **Noto Sans** — SIL Open Font License 1.1.
 - **OSM Bright sprite** — CC‑BY / ODbL (OpenMapTiles).
 
-## Not included
-
-Data extracted from the Google Maps/Earth applications is proprietary and is **not**
-included or relicensed here. The scraped Google raster tiles (if present in a working
-copy) are imagery only and are not part of this repository.
