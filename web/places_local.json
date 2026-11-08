@@ -1,0 +1,9 @@
+{
+  "tilejson": "3.0.0",
+  "scheme": "xyz",
+  "tiles": ["http://localhost:8083/pakistan_places/{z}/{x}/{y}.mvt"],
+  "minzoom": 11,
+  "maxzoom": 14,
+  "bounds": [60.8, 23.3, 77.3, 37.2],
+  "attribution": "© Overture Maps Foundation"
+}

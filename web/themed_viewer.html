@@ -1,0 +1,286 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Pakistan Vector — themes</title>
+<link href="assets/maplibre-gl.css" rel="stylesheet" />
+<script src="assets/maplibre-gl.js"></script>
+<style>
+  html, body, #map { height: 100%; margin: 0; }
+  #ui { position: absolute; top: 12px; left: 12px; z-index: 5; display: flex; gap: 6px;
+        font: 13px system-ui, sans-serif; }
+  #ui button { padding: 6px 12px; border: 0; border-radius: 6px; cursor: pointer;
+        background: #fff; color: #222; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+  #ui button.active { background: #222; color: #fff; }
+  #ui select { padding: 6px 8px; border: 0; border-radius: 6px; background: #fff;
+        color: #222; box-shadow: 0 1px 4px rgba(0,0,0,.25); font: 13px system-ui; }
+  #filters { position: absolute; top: 56px; left: 12px; z-index: 5; display: flex; gap: 4px;
+        flex-wrap: wrap; max-width: 55%; }
+  #filters button { padding: 4px 9px; border: 0; border-radius: 12px; cursor: pointer;
+        background: rgba(255,255,255,.95); color: #333; font: 12px system-ui;
+        box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+  #filters button.active { background: #1a73e8; color: #fff; }
+  #search { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 5;
+        padding: 7px 12px; border: 0; border-radius: 8px; font: 13px system-ui; width: 220px;
+        box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+  #results { position: absolute; top: 46px; left: 50%; transform: translateX(-50%); z-index: 7;
+        width: 340px; max-height: 320px; overflow-y: auto; background: #fff; border-radius: 8px;
+        box-shadow: 0 6px 24px rgba(0,0,0,.28); display: none; }
+  #results .r { padding: 8px 12px; cursor: pointer; font: 13px system-ui; border-bottom: 1px solid #eee; }
+  #results .r:hover { background: #f2f6ff; }
+  #results .cat { color: #888; font-size: 11px; text-transform: capitalize; }
+</style>
+</head>
+<body>
+<div id="ui">
+  <button data-theme="light" class="active">Light</button>
+  <button data-theme="dark">Dark</button>
+  <button data-theme="field">Field</button>
+  <select id="lang" title="Label language">
+    <option value="en">EN</option>
+    <option value="ur">اردو</option>
+    <option value="both">EN + اردو</option>
+  </select>
+  <select id="nearest" title="Find nearest in view">
+    <option value="">Nearest…</option>
+    <option value="hospital">Hospital</option>
+    <option value="pharmacy_and_drug_store">Pharmacy</option>
+    <option value="police_station">Police</option>
+    <option value="gas_station">Fuel</option>
+    <option value="restaurant">Food</option>
+    <option value="hotel">Hotel</option>
+    <option value="bank_or_credit_union">Bank</option>
+    <option value="place_of_worship">Worship</option>
+    <option value="place_of_learning">School</option>
+  </select>
+</div>
+<div id="filters">
+  <button data-g="" class="active">All</button>
+  <button data-g="health">Health</button>
+  <button data-g="emergency">Police</button>
+  <button data-g="fuel">Fuel</button>
+  <button data-g="food">Food</button>
+  <button data-g="school">School</button>
+  <button data-g="worship">Worship</button>
+  <button data-g="transit">Transit</button>
+</div>
+<input id="search" placeholder="Search place…" />
+<div id="results"></div>
+<div id="map"></div>
+<script>
+  async function fetchStyle(theme) {
+    const r = await fetch(`style_${theme}.json?cb=${Date.now()}`);
+    return await r.json();
+  }
+
+  (async () => {
+    const map = new maplibregl.Map({
+      container: "map",
+      style: await fetchStyle("light"),
+      center: [73.06, 33.60],
+      zoom: 15,
+      hash: true
+    });
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }));
+    map.addControl(new maplibregl.ScaleControl());
+    window.map = map;
+
+    // clickable POIs (OSM poi + Overture places)
+    function poiLayers() {
+      const out = [];
+      if (map.getLayer("poi")) out.push("poi");
+      if (map.getLayer("places")) out.push("places");
+      return out;
+    }
+    map.on("click", (e) => {
+      const layers = poiLayers();
+      if (!layers.length) return;
+      let feats = map.queryRenderedFeatures(e.point, { layers });
+      // prefer features that actually have a name
+      const named = feats.filter(f => (f.properties["name:en"] || f.properties.name));
+      if (named.length) feats = named;
+      if (!feats.length) return;
+
+      const rows = feats.slice(0, 3).map(f => {
+        const p = f.properties;
+        const name = p["name:en"] || p.name || "Unnamed";
+        const cat = (p.cat || [p.class, p.subclass].filter(Boolean).join(" / ") || "place")
+                      .replace(/_/g, " ");
+        let extra = "";
+        if (p.addr) extra += `<div style="color:#666;font-size:12px">${String(p.addr).replace(/\s+/g, " ").trim()}</div>`;
+        if (p.phone) extra += `<div style="font-size:12px"><a href="tel:${p.phone}" style="color:#1a73e8">${p.phone}</a></div>`;
+        if (p.website) extra += `<div style="font-size:12px"><a href="${p.website}" target="_blank" rel="noopener" style="color:#1a73e8">website</a></div>`;
+        if (p.status && p.status !== "open") extra += `<div style="color:#c0392b;font-size:12px">${p.status}</div>`;
+        return `<div style="margin:6px 0"><b>${name}</b><br><span style="color:#777;text-transform:capitalize">${cat}</span>${extra}</div>`;
+      }).join('<div style="height:1px;background:#eee"></div>');
+
+      new maplibregl.Popup({ closeButton: true, offset: 8, maxWidth: "240px" })
+        .setLngLat(e.lngLat)
+        .setHTML(`<div style="font:13px system-ui;min-width:150px">${rows}` +
+                 `<small style="color:#999">${e.lngLat.lat.toFixed(5)}, ${e.lngLat.lng.toFixed(5)}</small></div>`)
+        .addTo(map);
+    });
+    ["poi", "places"].forEach(id => {
+      map.on("mouseenter", id, () => { map.getCanvas().style.cursor = "pointer"; });
+      map.on("mouseleave", id, () => { map.getCanvas().style.cursor = ""; });
+    });
+
+    document.querySelectorAll("#ui button").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        map.setStyle(await fetchStyle(btn.dataset.theme));
+        document.querySelectorAll("#ui button").forEach(b => b.classList.toggle("active", b === btn));
+        map.once("idle", () => {
+          const l = document.getElementById("lang").value;
+          if (l !== "en") applyLang(l);
+          const active = document.querySelector("#filters button.active");
+          if (active && active.dataset.g) applyPlaceFilter(active.dataset.g);
+        });
+      });
+    });
+
+    // nearest-amenity search (within loaded view tiles)
+    const NEAREST_GROUPS = {
+      hospital: ["hospital", "health_care", "specialized_health_care", "diagnostics_imaging_or_lab_service"],
+      pharmacy_and_drug_store: ["pharmacy_and_drug_store", "health_care"],
+      police_station: ["police_station"],
+      gas_station: ["gas_station"],
+      restaurant: ["restaurant", "casual_eatery", "fast_food_restaurant", "cafe", "coffee_shop"],
+      hotel: ["hotel", "lodging", "resort"],
+      bank_or_credit_union: ["bank_or_credit_union", "financial_service", "atm"],
+      place_of_worship: ["muslim_place_of_worship", "hindu_place_of_worship", "christian_place_of_worship", "place_of_worship", "religious_organization"],
+      place_of_learning: ["place_of_learning", "high_school", "college_university", "education", "educational_service", "elementary_school", "specialty_school", "preschool", "tutoring_service"],
+    };
+    const nearestSel = document.getElementById("nearest");
+    nearestSel.addEventListener("change", () => {
+      const cat = nearestSel.value;
+      if (!cat) return;
+      const center = map.getCenter();
+      const group = NEAREST_GROUPS[cat] || [cat];
+      const feats = map.querySourceFeatures("places", { sourceLayer: "place" })
+                        .filter(f => group.includes(f.properties.bcat));
+      if (!feats.length) {
+        nearestSel.value = "";
+        alert("No " + cat.replace(/_/g, " ") + " in the current view — pan/zoom out a bit.");
+        return;
+      }
+      const toRad = d => d * Math.PI / 180;
+      const dist = (a, b) => {
+        const R = 6371, dLat = toRad(b.lat - a.lat), dLon = toRad(b.lng - a.lng);
+        const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2;
+        return 2 * R * Math.asin(Math.sqrt(s));
+      };
+      let best = null, bd = Infinity;
+      for (const f of feats) {
+        const c = f.geometry.coordinates;
+        const d = dist({ lat: center.lat, lng: center.lng }, { lat: c[1], lng: c[0] });
+        if (d < bd) { bd = d; best = f; }
+      }
+      const c = best.geometry.coordinates;
+      const p = best.properties;
+      map.flyTo({ center: c, zoom: Math.max(map.getZoom(), 15) });
+      let html = `<div style="font:13px system-ui"><b>${p.name || "Unnamed"}</b><br>` +
+                 `<span style="color:#777;text-transform:capitalize">${(p.cat || cat).replace(/_/g, " ")}</span><br>` +
+                 `<small>${bd.toFixed(2)} km from view centre</small>`;
+      if (p.addr) html += `<div style="color:#666;font-size:12px">${String(p.addr).replace(/\s+/g, " ").trim()}</div>`;
+      if (p.phone) html += `<div style="font-size:12px"><a href="tel:${p.phone}">${p.phone}</a></div>`;
+      html += `</div>`;
+      new maplibregl.Popup({ offset: 8 }).setLngLat(c).setHTML(html).addTo(map);
+      nearestSel.value = "";
+    });
+
+    // POI category filters
+    const FILTER_GROUPS = {
+      health: ["hospital", "health_care", "specialized_health_care", "diagnostics_imaging_or_lab_service", "pharmacy_and_drug_store", "dental_clinic"],
+      emergency: ["police_station", "fire_station"],
+      fuel: ["gas_station"],
+      food: ["restaurant", "casual_eatery", "fast_food_restaurant", "cafe", "coffee_shop", "bakery"],
+      school: ["place_of_learning", "high_school", "college_university", "education", "educational_service", "elementary_school", "specialty_school", "preschool", "tutoring_service"],
+      worship: ["muslim_place_of_worship", "hindu_place_of_worship", "christian_place_of_worship", "place_of_worship", "religious_organization"],
+      transit: ["public_transit_facility_or_service", "train_station", "bus_station", "ferry_terminal"],
+    };
+    function applyPlaceFilter(group) {
+      if (!map.getLayer("places")) return;
+      if (!group) { map.setFilter("places", null); return; }
+      const cats = FILTER_GROUPS[group] || [];
+      const expr = ["match", ["get", "bcat"]];
+      for (const c of cats) expr.push(c, true);
+      expr.push(false);
+      map.setFilter("places", expr);
+    }
+    document.querySelectorAll("#filters button").forEach(b => b.addEventListener("click", () => {
+      document.querySelectorAll("#filters button").forEach(x => x.classList.toggle("active", x === b));
+      applyPlaceFilter(b.dataset.g);
+    }));
+
+    // place search via offline FTS index
+    const search = document.getElementById("search");
+    const results = document.getElementById("results");
+    let searchTimer = null;
+    const closeResults = () => { results.style.display = "none"; };
+    function goToResult(x) {
+      const c = [x.lon, x.lat];
+      closeResults();
+      search.value = x.name;
+      map.flyTo({ center: c, zoom: Math.max(map.getZoom(), 16) });
+      new maplibregl.Popup({ offset: 8 }).setLngLat(c)
+        .setHTML(`<b>${x.name}</b><br><span style="color:#777;text-transform:capitalize">${(x.cat || x.bcat || "").replace(/_/g, " ")}</span>`)
+        .addTo(map);
+    }
+    async function runSearch(q) {
+      try {
+        const r = await fetch("http://localhost:8084/search?q=" + encodeURIComponent(q));
+        const arr = await r.json();
+        if (!Array.isArray(arr) || !arr.length) {
+          results.innerHTML = '<div class="r" style="color:#999">No results</div>';
+          results.style.display = "block";
+          return;
+        }
+        results.innerHTML = arr.map((x, i) =>
+          `<div class="r" data-i="${i}"><b>${x.name}</b><div class="cat">${(x.cat || x.bcat || "").replace(/_/g, " ")}</div></div>`
+        ).join("");
+        results.style.display = "block";
+        results.querySelectorAll(".r[data-i]").forEach(el =>
+          el.addEventListener("click", () => goToResult(arr[+el.dataset.i])));
+        window.__results = arr;
+      } catch (e) {
+        results.innerHTML = '<div class="r" style="color:#999">search unavailable</div>';
+        results.style.display = "block";
+      }
+    }
+    search.addEventListener("input", () => {
+      clearTimeout(searchTimer);
+      const q = search.value.trim();
+      if (q.length < 2) { closeResults(); return; }
+      searchTimer = setTimeout(() => runSearch(q), 250);
+    });
+    search.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && window.__results && window.__results.length) goToResult(window.__results[0]);
+      if (e.key === "Escape") closeResults();
+    });
+
+    // label language: English / Urdu / both
+    const LANG_LAYERS = ["place-city", "place-town", "place-village", "place-suburb",
+                         "road-label", "water-name", "aerodrome", "peak"];
+    const langSel = document.getElementById("lang");
+    function applyLang(lang) {
+      for (const id of LANG_LAYERS) {
+        if (!map.getLayer(id)) continue;
+        let expr;
+        if (lang === "ur") {
+          expr = ["coalesce", ["get", "name:ur"], ["get", "name"], ""];
+        } else if (lang === "both") {
+          expr = ["format",
+                  ["coalesce", ["get", "name:en"], ["get", "name"], ""], {},
+                  "\n", {},
+                  ["coalesce", ["get", "name:ur"], ""]];
+        } else {
+          expr = ["to-string", ["coalesce", ["get", "name:en"], ["get", "name"], ""]];
+        }
+        map.setLayoutProperty(id, "text-field", expr);
+      }
+    }
+    langSel.addEventListener("change", () => applyLang(langSel.value));
+  })();
+</script>
+</body>
+</html>

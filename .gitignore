@@ -1,0 +1,24 @@
+# Large data artifacts (download from releases)
+data/*.pmtiles
+data/*.db
+data/*.mbtiles
+data/*.pbf
+data/tiles/
+data/overture/
+data/sources/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# IDEs / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Third-party binaries / tools
+tools/*.exe
+tools/*.jar

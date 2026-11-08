@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Waffle Nav demo — vector + offline routing</title>
+<link href="assets/maplibre-gl.css" rel="stylesheet" />
+<script src="assets/maplibre-gl.js"></script>
+<style>
+  html, body, #map { height: 100%; margin: 0; }
+  #hud { position: absolute; top: 14px; left: 14px; z-index: 6; background: rgba(20,24,32,.92);
+         color: #fff; border-radius: 12px; padding: 12px 16px; font: 13px system-ui;
+         box-shadow: 0 6px 24px rgba(0,0,0,.35); min-width: 210px; }
+  #hud b { font-size: 15px; }
+  #hud .sub { color: #9aa4b2; margin-top: 2px; }
+  #hud .turn { margin-top: 10px; padding-top: 10px; border-top: 1px solid #2a3140;
+               display: flex; align-items: center; gap: 10px; }
+  #hud .arrow { font-size: 26px; }
+  #hud .tl { font-size: 15px; font-weight: 600; }
+  #limit { position: absolute; bottom: 22px; right: 22px; z-index: 6; width: 58px; height: 58px;
+           border-radius: 50%; background: #fff; border: 5px solid #d33; color: #111;
+           display: grid; place-items: center; font: 700 22px system-ui; box-shadow: 0 3px 12px rgba(0,0,0,.35); }
+  #drive { position: absolute; bottom: 22px; left: 22px; z-index: 6; padding: 12px 22px; border: 0;
+           border-radius: 10px; background: #1a73e8; color: #fff; font: 600 14px system-ui; cursor: pointer;
+           box-shadow: 0 4px 16px rgba(26,115,232,.5); }
+  #drive.stop { background: #d33; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="hud">
+  <b>F‑8 Markaz → Saddar</b>
+  <div class="sub">12.4 km · 18 min · offline</div>
+  <div class="turn"><span class="arrow">➜</span><span class="tl" id="turn">Turn right in 300 m</span></div>
+</div>
+<div id="limit">60</div>
+<button id="drive">▶ Drive</button>
+<script>
+  const ROUTE = [
+    [73.0470, 33.7060], [73.0525, 33.7010], [73.0580, 33.6950], [73.0640, 33.6870],
+    [73.0700, 33.6780], [73.0745, 33.6680], [73.0760, 33.6570], [73.0720, 33.6450],
+    [73.0640, 33.6310], [73.0570, 33.6150], [73.0545, 33.6010], [73.0550, 33.5900]
+  ];
+
+  const bearing = (a, b) => (Math.atan2(b[0] - a[0], b[1] - a[1]) * 180 / Math.PI + 360) % 360;
+
+  const map = new maplibregl.Map({
+    container: "map",
+    style: "style_light.json?cb=" + Date.now(),
+    center: ROUTE[0],
+    zoom: 16.2,
+    pitch: 58,
+    bearing: bearing(ROUTE[0], ROUTE[2])
+  });
+  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }));
+  window.map = map;
+
+  map.on("load", () => {
+    map.addSource("route", {
+      type: "geojson",
+      data: { type: "Feature", geometry: { type: "LineString", coordinates: ROUTE } }
+    });
+    map.addLayer({ id: "route-casing", type: "line", source: "route",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": "#0b3d91", "line-width": 14, "line-opacity": 0.30 } });
+    map.addLayer({ id: "route-line", type: "line", source: "route",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": "#1a73e8", "line-width": 8 } });
+    map.addLayer({ id: "route-arrows", type: "symbol", source: "route",
+      layout: { "symbol-placement": "line", "icon-image": "oneway", "icon-size": 0.55,
+                "icon-rotate": 90, "symbol-spacing": 90 },
+      paint: { "icon-opacity": 0.95 } });
+
+    const dest = ROUTE[ROUTE.length - 1];
+    map.addSource("dest", { type: "geojson",
+      data: { type: "Feature", geometry: { type: "Point", coordinates: dest } } });
+    map.addLayer({ id: "dest-halo", type: "circle", source: "dest",
+      paint: { "circle-radius": 12, "circle-color": "#d33", "circle-opacity": 0.25 } });
+    map.addLayer({ id: "dest-dot", type: "circle", source: "dest",
+      paint: { "circle-radius": 6, "circle-color": "#d33", "circle-stroke-width": 2, "circle-stroke-color": "#fff" } });
+
+    // a simple car puck
+    const car = document.createElement("div");
+    car.style.cssText = "width:26px;height:26px;border-radius:50%;background:#1a73e8;border:3px solid #fff;" +
+                        "box-shadow:0 2px 8px rgba(0,0,0,.4);display:grid;place-items:center;color:#fff;font:13px system-ui;";
+    car.textContent = "▲";
+    const puck = new maplibregl.Marker({ element: car, rotationAlignment: "map" })
+      .setLngLat(ROUTE[0]).addTo(map);
+    window.__puck = puck;
+
+    // fit the route once
+    const bounds = new maplibregl.LngLatBounds();
+    ROUTE.forEach(c => bounds.extend(c));
+    map.fitBounds(bounds, { padding: { top: 120, bottom: 120, left: 120, right: 120 }, pitch: 58, duration: 0 });
+  });
+
+  let driving = false, timer = null, step = 0;
+  const btn = document.getElementById("drive");
+  const turn = document.getElementById("turn");
+  const TURNS = ["Turn right in 300 m", "Keep left onto Murree Road", "Turn left in 500 m",
+                 "Continue straight 1.2 km", "Turn right onto Bank Road", "Arrive at Saddar"];
+
+  btn.addEventListener("click", () => {
+    if (driving) {
+      driving = false; clearInterval(timer); btn.textContent = "▶ Drive"; btn.classList.remove("stop");
+      return;
+    }
+    driving = true; step = 0; btn.textContent = "■ Stop"; btn.classList.add("stop");
+    timer = setInterval(() => {
+      const a = ROUTE[step];
+      const b = ROUTE[Math.min(step + 1, ROUTE.length - 1)];
+      window.__puck.setLngLat(a);
+      const bearingNow = bearing(a, b);
+      map.easeTo({ center: a, zoom: 16.2, pitch: 58, bearing: bearingNow, duration: 1200 });
+      turn.textContent = TURNS[Math.min(step, TURNS.length - 1)];
+      step++;
+      if (step >= ROUTE.length) {
+        driving = false; clearInterval(timer); btn.textContent = "▶ Drive"; btn.classList.remove("stop");
+      }
+    }, 1400);
+  });
+</script>
+</body>
+</html>
