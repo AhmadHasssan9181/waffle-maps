@@ -9,9 +9,19 @@ LABELS = ["place-city", "place-town", "place-village", "place-suburb",
 
 def tf(lang):
     if lang == "ur":
-        return ["coalesce", ["get", "name:ur"], ["get", "name"], ""]
+        return ["coalesce", ["get", "name:ur"], ""]
     return ["format",
             ["coalesce", ["get", "name:en"], ["get", "name"], ""], {},
+            "\n", {},
+            ["coalesce", ["get", "name:ur"], ""]]
+
+
+def tf_places(lang):
+    # POIs are brand names: keep the Latin name as a fallback in Urdu mode.
+    if lang == "ur":
+        return ["coalesce", ["get", "name:ur"], ["get", "name"], ""]
+    return ["format",
+            ["coalesce", ["get", "name"], ""], {},
             "\n", {},
             ["coalesce", ["get", "name:ur"], ""]]
 
@@ -25,8 +35,12 @@ for theme in ("light", "dark", "field"):
         for lang in ("ur", "both"):
             s = copy.deepcopy(base)
             for l in s["layers"]:
-                if l.get("id") in LABELS and l.get("type") == "symbol":
+                if l.get("type") != "symbol":
+                    continue
+                if l.get("id") in LABELS:
                     l.setdefault("layout", {})["text-field"] = tf(lang)
+                elif l.get("id") == "places":
+                    l.setdefault("layout", {})["text-field"] = tf_places(lang)
             out = os.path.join(base_dir, f"style_{theme}_{lang}.json")
             json.dump(s, open(out, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
             print("wrote", out)

@@ -220,11 +220,13 @@
     const closeResults = () => { results.style.display = "none"; };
     function goToResult(x) {
       const c = [x.lon, x.lat];
+      const ur = document.getElementById("lang").value === "ur";
+      const primary = (ur && x.name_ur) ? x.name_ur : x.name;
       closeResults();
-      search.value = x.name;
+      search.value = primary;
       map.flyTo({ center: c, zoom: Math.max(map.getZoom(), 16) });
       new maplibregl.Popup({ offset: 8 }).setLngLat(c)
-        .setHTML(`<b>${x.name}</b><br><span style="color:#777;text-transform:capitalize">${(x.cat || x.bcat || "").replace(/_/g, " ")}</span>`)
+        .setHTML(`<b>${primary}</b><br><span style="color:#777;text-transform:capitalize">${(x.cat || x.bcat || "").replace(/_/g, " ")}</span>`)
         .addTo(map);
     }
     async function runSearch(q) {
@@ -236,9 +238,14 @@
           results.style.display = "block";
           return;
         }
-        results.innerHTML = arr.map((x, i) =>
-          `<div class="r" data-i="${i}"><b>${x.name}</b><div class="cat">${(x.cat || x.bcat || "").replace(/_/g, " ")}</div></div>`
-        ).join("");
+        const lang = document.getElementById("lang").value;
+        results.innerHTML = arr.map((x, i) => {
+          const primary = (lang === "ur" && x.name_ur) ? x.name_ur : x.name;
+          const second = (lang === "both" && x.name_ur)
+            ? `<div class="cat">${x.name_ur}</div>` : "";
+          return `<div class="r" data-i="${i}"><b>${primary}</b>${second}` +
+                 `<div class="cat">${(x.cat || x.bcat || "").replace(/_/g, " ")}</div></div>`;
+        }).join("");
         results.style.display = "block";
         results.querySelectorAll(".r[data-i]").forEach(el =>
           el.addEventListener("click", () => goToResult(arr[+el.dataset.i])));
@@ -261,21 +268,25 @@
 
     // label language: English / Urdu / both
     const LANG_LAYERS = ["place-city", "place-town", "place-village", "place-suburb",
-                         "road-label", "water-name", "aerodrome", "peak"];
+                         "road-label", "water-name", "aerodrome", "peak", "places"];
     const langSel = document.getElementById("lang");
     function applyLang(lang) {
       for (const id of LANG_LAYERS) {
         if (!map.getLayer(id)) continue;
+        const isPlaces = id === "places";
+        const enField = isPlaces ? "name" : "name:en";
         let expr;
         if (lang === "ur") {
-          expr = ["coalesce", ["get", "name:ur"], ["get", "name"], ""];
+          expr = isPlaces
+            ? ["coalesce", ["get", "name:ur"], ["get", "name"], ""]
+            : ["coalesce", ["get", "name:ur"], ""];
         } else if (lang === "both") {
           expr = ["format",
-                  ["coalesce", ["get", "name:en"], ["get", "name"], ""], {},
+                  ["coalesce", ["get", enField], ["get", "name"], ""], {},
                   "\n", {},
                   ["coalesce", ["get", "name:ur"], ""]];
         } else {
-          expr = ["to-string", ["coalesce", ["get", "name:en"], ["get", "name"], ""]];
+          expr = ["to-string", ["coalesce", ["get", enField], ["get", "name"], ""]];
         }
         map.setLayoutProperty(id, "text-field", expr);
       }

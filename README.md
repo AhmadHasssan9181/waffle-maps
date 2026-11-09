@@ -14,7 +14,7 @@
 
 <p align="center">
   <a href="https://github.com/AhmadHasssan9181/waffle-maps/releases/tag/v1.0.0">
-    <img src="https://img.shields.io/badge/Download_Data_Pack-v1.0.0_(585_MB)-F59E0B?style=for-the-badge&logo=github&logoColor=white" alt="Download Data Pack v1.0.0" />
+    <img src="https://img.shields.io/badge/Download_Data_Pack-v1.0.0_(705_MB)-F59E0B?style=for-the-badge&logo=github&logoColor=white" alt="Download Data Pack v1.0.0" />
   </a>
   &nbsp;
   <a href="https://github.com/AhmadHasssan9181/Waffle">
@@ -130,6 +130,8 @@ Every visual theme is compiled in three script variants—**English (`name:en`)*
 
 > [!NOTE]
 > **Urdu is shaped, not just substituted.** The web suite bundles `mapbox-gl-rtl-text` (ICU Arabic joining + Unicode bidi) and a `maplibre-gl.js` build that waits for the plugin's asynchronous WASM registration before laying out text. `name:ur` labels therefore render with proper joined letterforms and right-to-left order. MapLibre Native applies the same shaping natively on Android, so no plugin is required there.
+>
+> **Coverage is filled, not left blank.** OSM tags `name:ur` on only ~31% of named roads and ~12% of named places. A build-time transliteration pass (`transliterate_words.py` + `urdu_patch.py`) converts the remaining Latin names into Urdu script using a cached word dictionary and deterministic rules, then writes `name:ur` directly into **both PMTiles**. The Urdu styles are therefore fully Urdu and remain 100% offline at runtime.
 
 <p align="center">
   <img
@@ -167,9 +169,9 @@ Because GitHub restricts repository blobs above `100 MB`, the three compiled bin
 
 | Artifact | Size | Zoom / Scope | Schema &amp; Contents |
 | :--- | ---: | :---: | :--- |
-| **`pakistan_vector.pmtiles`** | `266.1 MB` | `z0 – z14` | **253,618 MVT/gzip tiles** · OpenMapTiles 15-layer national basemap (`60.8°E–77.2°E, 23.3°N–37.1°N`) |
-| **`pakistan_places.pmtiles`** | `214.5 MB` | `z11 – z14` | **119,921 MVT/gzip tiles** · **809,824 Overture POIs** in layer `place` (`name`, `cat`, `bcat`, `phone`, `website`, `addr`, `status`) |
-| **`places_search.db`** | `104.4 MB` | National | **SQLite FTS5** full-text index (`places` + `places_fts`) with prefix &amp; BM25 ranking |
+| **`pakistan_vector.pmtiles`** | `276.9 MB` | `z0 – z14` | **253,618 MVT/gzip tiles** · OpenMapTiles 15-layer national basemap (`60.8°E–77.2°E, 23.3°N–37.1°N`) · full **`name:ur`** coverage via build-time transliteration |
+| **`pakistan_places.pmtiles`** | `274.7 MB` | `z11 – z14` | **119,921 MVT/gzip tiles** · **809,824 Overture POIs** in layer `place` (`name`, `name:ur`, `cat`, `bcat`, `phone`, `website`, `addr`, `status`) |
+| **`places_search.db`** | `153.5 MB` | National | **SQLite FTS5** full-text index (`places` + `places_fts`) over `name` + `name_ur`, with prefix &amp; BM25 ranking |
 | **`app-assets/` + `styles/`** | `~11.0 MB` | All Zooms | **9 style variants** + `1x`/`2x` sprite sheets + **all 256 PBF glyph ranges** per Noto Sans weight (tracked in git) |
 
 Verify archive integrity after downloading:
@@ -203,8 +205,11 @@ waffle-maps/
 │   ├── make_styles_pretty.py
 │   ├── add_places_layer.py
 │   ├── make_urdu_styles.py
+│   ├── transliterate_words.py  # Build-time Latin → Urdu dictionary (cached)
+│   ├── urdu_patch.py           # Fill name:ur in both PMTiles
+│   ├── urdu_search.py          # Add name_ur + bilingual FTS5 index
 │   ├── package_android.py
-│   └── serve_*.py          # Local HTTP Range, CORS proxy & FTS5 search microservices
+│   └── serve_*.py          # Static CORS, HTTP Range, proxy & FTS5 search microservices
 ├── data/                   # Drop release binaries here (pakistan_vector.pmtiles, pakistan_places.pmtiles, places_search.db)
 └── ATTRIBUTIONS.md         # Third-party data & software attributions
 ```

@@ -1757,10 +1757,25 @@
      1.0
     ],
     "text-field": [
-     "to-string",
+     "format",
      [
-      "get",
-      "name"
+      "coalesce",
+      [
+       "get",
+       "name"
+      ],
+      ""
+     ],
+     {},
+     "\n",
+     {},
+     [
+      "coalesce",
+      [
+       "get",
+       "name:ur"
+      ],
+      ""
      ]
     ],
     "text-font": [

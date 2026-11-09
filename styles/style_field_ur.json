@@ -951,10 +951,6 @@
       "get",
       "name:ur"
      ],
-     [
-      "get",
-      "name"
-     ],
      ""
     ],
     "text-font": [
@@ -1069,10 +1065,6 @@
       "get",
       "name:ur"
      ],
-     [
-      "get",
-      "name"
-     ],
      ""
     ],
     "text-font": [
@@ -1100,10 +1092,6 @@
       "get",
       "name:ur"
      ],
-     [
-      "get",
-      "name"
-     ],
      ""
     ],
     "text-font": [
@@ -1129,10 +1117,6 @@
      [
       "get",
       "name:ur"
-     ],
-     [
-      "get",
-      "name"
      ],
      ""
     ],
@@ -1171,10 +1155,6 @@
      [
       "get",
       "name:ur"
-     ],
-     [
-      "get",
-      "name"
      ],
      ""
     ],
@@ -1221,10 +1201,6 @@
      [
       "get",
       "name:ur"
-     ],
-     [
-      "get",
-      "name"
      ],
      ""
     ],
@@ -1280,10 +1256,6 @@
       "get",
       "name:ur"
      ],
-     [
-      "get",
-      "name"
-     ],
      ""
     ],
     "text-font": [
@@ -1336,10 +1308,6 @@
      [
       "get",
       "name:ur"
-     ],
-     [
-      "get",
-      "name"
      ],
      ""
     ],
@@ -1645,11 +1613,16 @@
      1.0
     ],
     "text-field": [
-     "to-string",
+     "coalesce",
+     [
+      "get",
+      "name:ur"
+     ],
      [
       "get",
       "name"
-     ]
+     ],
+     ""
     ],
     "text-font": [
      "Noto Sans Regular"

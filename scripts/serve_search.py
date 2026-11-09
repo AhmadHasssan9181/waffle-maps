@@ -33,7 +33,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             con = sqlite3.connect(DB)
             con.row_factory = sqlite3.Row
             rows = con.execute(
-                """SELECT p.name, p.cat, p.bcat, p.lon, p.lat
+                """SELECT p.name, p.name_ur, p.cat, p.bcat, p.lon, p.lat
                    FROM places_fts f JOIN places p ON p.id = f.rowid
                    WHERE places_fts MATCH ? ORDER BY rank LIMIT 25""",
                 (match,),

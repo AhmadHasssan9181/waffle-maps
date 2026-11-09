@@ -27,5 +27,7 @@ Any map or derived product must display:
 - **Planetiler** — Apache 2.0. <https://github.com/onthegomap/planetiler>
 - **DuckDB** — MIT. <https://duckdb.org/>
 - **Noto Sans** — SIL Open Font License 1.1.
+- **Google Input Tools** — used at build time only to seed the Latin → Urdu
+  transliteration dictionary; it is not a runtime dependency.
 - **OSM Bright sprite** — CC‑BY / ODbL (OpenMapTiles).
 

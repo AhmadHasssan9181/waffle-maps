@@ -7,9 +7,13 @@ Download them into this `data/` folder:
 
 | File | Size | Purpose |
 |---|---:|---|
-| `pakistan_vector.pmtiles` | 266 MB | Basemap vector tiles (z0–14, OpenMapTiles) |
-| `pakistan_places.pmtiles` | 214.5 MB | 809,824 POIs (z11–14, layer `place`) |
-| `places_search.db` | 104.4 MB | SQLite FTS5 search index |
+| `pakistan_vector.pmtiles` | 276.9 MB | Basemap vector tiles (z0–14, OpenMapTiles), `name:ur` filled |
+| `pakistan_places.pmtiles` | 274.7 MB | 809,824 POIs (z11–14, layer `place`), `name:ur` filled |
+| `places_search.db` | 153.5 MB | SQLite FTS5 search index (`name` + `name_ur`) |
+
+Both tile archives carry `name:ur` for every labelled feature — either the OSM tag
+or a build-time transliteration — so the `*_ur` and `*_both` styles render fully
+in Urdu with no English fallback.
 
 Verify after download:
 
