@@ -60,7 +60,7 @@ def icon_expr():
 
 def patch(path, source_url):
     st = json.load(open(path, encoding="utf-8"))
-    ref = next((l for l in st["layers"] if l["id"] == "place"), {})
+    ref = next((l for l in st["layers"] if l["id"] == "place-town"), {})
     paint = ref.get("paint", {"text-color": "#333", "text-halo-color": "#fff", "text-halo-width": 1})
 
     st["sources"]["places"] = {"type": "vector", "url": source_url, "minzoom": 11, "maxzoom": 14}
@@ -72,7 +72,7 @@ def patch(path, source_url):
             "icon-image": icon_expr(),
             "icon-size": ["interpolate", ["linear"], ["zoom"], 11, 0.45, 16, 1.0],
             "text-field": ["to-string", ["get", "name"]],
-            "text-font": ["Noto Sans Regular"], "text-size": 10,
+            "text-font": ["Noto Sans Regular"], "text-size": 11,
             "text-anchor": "top", "text-offset": [0, 1.1], "text-padding": 2,
             "text-optional": True, "icon-allow-overlap": False,
         },

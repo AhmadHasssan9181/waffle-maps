@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <title>Waffle Nav demo — vector + offline routing</title>
 <link href="assets/maplibre-gl.css" rel="stylesheet" />
-<script src="assets/maplibre-gl.js"></script>
+<script src="assets/maplibre-gl.js?v=4"></script>
 <style>
   html, body, #map { height: 100%; margin: 0; }
   #hud { position: absolute; top: 14px; left: 14px; z-index: 6; background: rgba(20,24,32,.92);
@@ -43,6 +43,7 @@
 
   const bearing = (a, b) => (Math.atan2(b[0] - a[0], b[1] - a[1]) * 180 / Math.PI + 360) % 360;
 
+  maplibregl.setRTLTextPlugin("assets/mapbox-gl-rtl-text.js", false);
   const map = new maplibregl.Map({
     container: "map",
     style: "style_light.json?cb=" + Date.now(),

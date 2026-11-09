@@ -77,6 +77,15 @@
       <sub>Pitched camera, dual-layer route casing with directional arrows, maneuver banner, and speed-limit badge</sub>
     </td>
   </tr>
+  <tr>
+    <td align="center" colspan="2" width="100%">
+      <img src="./assets/shots/urdu_dark.png" width="100%" alt="Urdu labels, properly shaped right-to-left" />
+      <br /><br />
+      <b>Urdu (اردو) — Properly Shaped Right-to-Left Labels</b>
+      <br />
+      <sub>ICU Arabic joining + Unicode bidi via the bundled RTL text plugin; <code>name:ur</code> labels render with connected letterforms and correct right-to-left order</sub>
+    </td>
+  </tr>
 </table>
 
 ---
@@ -118,6 +127,9 @@ Raw open geospatial datasets are compiled into single-file, random-access `PMTil
 ## <img src="./assets/icons/layers.svg" width="22" height="22" align="absmiddle" alt="" /> &nbsp;3×3 Theme &amp; Bilingual Script Matrix
 
 Every visual theme is compiled in three script variants—**English (`name:en`)**, **Urdu (`name:ur`)**, and **Bilingual (`EN + UR`)**—yielding **9 production MapLibre style JSONs** (`47 layers` each) backed by all 256 Unicode PBF glyph ranges (`0–65535`).
+
+> [!NOTE]
+> **Urdu is shaped, not just substituted.** The web suite bundles `mapbox-gl-rtl-text` (ICU Arabic joining + Unicode bidi) and a `maplibre-gl.js` build that waits for the plugin's asynchronous WASM registration before laying out text. `name:ur` labels therefore render with proper joined letterforms and right-to-left order. MapLibre Native applies the same shaping natively on Android, so no plugin is required there.
 
 <p align="center">
   <img
@@ -181,7 +193,9 @@ waffle-maps/
 ├── web/                    # Self-contained MapLibre GL JS inspection suite
 │   ├── themed_viewer.html  # Theme, script (EN/UR/Both), category filter & nearest-POI inspector
 │   ├── nav_viewer.html     # 3D turn-by-turn navigation HUD & route casing simulator
-│   └── style_*.json        # Local-server style definitions
+│   ├── offline_viewer.html # Minimal single-file local viewer
+│   ├── assets/             # MapLibre GL, PMTiles, RTL text plugin, sprite & glyph ranges
+│   └── style_*.json        # Local-server style definitions (EN / UR / bilingual)
 ├── scripts/                # Reproducible data & cartography build pipeline
 │   ├── make_water_polygons.py
 │   ├── build_overture_pois.py
@@ -225,17 +239,20 @@ LIMIT 20;
 
 ### 2. Local WebGL Preview Suite
 
-After placing the three release files in `data/`, launch the local tile, search, and proxy services from the repository root:
+After placing the three release files in `data/`, launch the local static, tile, search, and proxy services from the repository root:
 
 ```bash
-# 1. Serve PMTiles or HTTP Range archives + FTS5 search API
+# 0. Serve the web suite with CORS (MapLibre's worker needs it to load the RTL plugin)
+python scripts/serve_web.py 8001 web
+
+# 1. Serve PMTiles / HTTP Range archives + FTS5 search API
 python scripts/serve_range.py 8082
 python scripts/serve_search.py 8084
 python scripts/serve_proxy.py 8083
 
-# 2. Open the interactive viewers in your browser
-# - Theme, language & POI category explorer: web/themed_viewer.html
-# - 3D turn-by-turn navigation simulator:    web/nav_viewer.html
+# 2. Open the interactive viewers
+# - http://localhost:8001/themed_viewer.html  (theme, language & POI explorer)
+# - http://localhost:8001/nav_viewer.html     (3D turn-by-turn simulator)
 ```
 
 ---
@@ -248,7 +265,7 @@ All cartographic schemas, style generators, and integration scripts in this repo
 - **Vector Tile Schema:** © [OpenMapTiles](https://openmaptiles.org/) — licensed under **CC-BY 4.0**
 - **Places Dataset:** © [Overture Maps Foundation](https://overturemaps.org/) (`2026-10-21.0`) — licensed under **CDLA-Permissive 2.0**
 - **Water Polygons:** [Natural Earth 10m](https://www.naturalearthdata.com/) — **Public Domain**
-- **Typography &amp; Engine:** **Noto Sans** (**SIL OFL 1.1**) · **MapLibre GL** (**BSD 3-Clause**) · **PMTiles** (**BSD 3-Clause**)
+- **Typography, Engine &amp; RTL:** **Noto Sans** (**SIL OFL 1.1**) · **MapLibre GL** (**BSD 3-Clause**) · **PMTiles** (**BSD 3-Clause**) · **Mapbox RTL Text Plugin** (**BSD-2-Clause**)
 
 Full third-party notices and required credit strings are documented in [**`ATTRIBUTIONS.md`**](./ATTRIBUTIONS.md).
 

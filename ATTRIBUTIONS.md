@@ -20,6 +20,8 @@ Any map or derived product must display:
 ## Software
 
 - **MapLibre GL** — BSD 3‑Clause. <https://maplibre.org/>
+- **Mapbox RTL Text Plugin** (`@mapbox/mapbox-gl-rtl-text`) — BSD-2-Clause.
+  <https://github.com/mapbox/mapbox-gl-rtl-text>
 - **PMTiles** (`go-pmtiles`, `pmtiles.js`) — BSD 3‑Clause.
   <https://github.com/protomaps/PMTiles>
 - **Planetiler** — Apache 2.0. <https://github.com/onthegomap/planetiler>
